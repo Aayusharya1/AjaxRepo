@@ -4,52 +4,59 @@ function showTime()
     const date = new Date();
     return date.getHours() + "Hrs: " + date.getMinutes() + "Mins: " + date.getSeconds() + "Secs:";
 }
-function makeAJAXCall(methodType, url, callback, async=true, data=null){
-    let xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function(){
-        //console.log(methodType + " State Changed called at: " + showTime() + "Ready state: " + xhr.readyState + " Status: " + xhr.status)
-        if(xhr.readyState === 4)
+function makePromiseCall(methodType, url, async=true, data=null)
+{
+    return new Promise(function (resolve, reject)
+    {
+        let xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function()
         {
-            if(xhr.status === 200 || xhr.status === 201)
+            //console.log(methodType + " State Changed called at: " + showTime() + "Ready state: " + xhr.readyState + " Status: " + xhr.status)
+            if(xhr.status.toString().match("^[2][0-9]{2}$"))
             {
-                callback(xhr.responseText);
+                    resolve(xhr.responseText);
             }
-            else if(xhr.status >= 400)
+            else if(xhr.status.toString().match("^[4,5][0-9]{2}$"))
             {
+                reject({
+                status: xhr.status,
+                statusText: xhr.statusText
+                }); 
                 console.log("Handle 400 client error or 500 server error");
             }
-        }   
-    } 
-    xhr.open(methodType, url, async);
-    if(data)
-    {
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.send(JSON.stringify(data));
-    }
-    else xhr.send();
-    console.log(methodType+" Request sent to server");
+        }
+        xhr.open(methodType, url, async);
+        if(data)
+        {
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(JSON.stringify(data));
+        }
+        else xhr.send();
+        console.log(methodType+" Request sent to server");
+    });
 }
-const getUrl = " http://localhost:3000/employees/"
-function getUserDetails(data)
-{
-    console.log("Get User Data at: " + showTime() + " Value: " + data);
-}
-makeAJAXCall("GET", getUrl, getUserDetails, true);
-console.log("Made GET AJAX call to the server at " + showTime());
 
-const deleteURL = "http://localhost:3000/employees/12";
-function userDeletedData(data)
-{
-    console.log("User Deleted : "+ data);
-}
-makeAJAXCall("DELETE", deleteURL, userDeletedData, true);
-console.log("Made DELETE AJAX call to the server at " + showTime());
+const getURL = "http://localhost:3000/employees/10";
+makePromiseCall("GET", getURL, true)
+               .then(responseText => {
+                console.log("Get User Data at: " + showTime() + " Value: " + responseText);
+            })
+               .catch(error => console.log("Get error status : "+ JSON.stringify(error)));
+console.log("Made GET Promise call to the server at " + showTime());
 
-const postURL = "http://localhost:3000/employees/15";
-const empData = {"name":"Aayush","salary":"80000","id":"15"};
-function userAdded(data)
-{
-    console.log("User Added : "+ data);
-}
-makeAJAXCall("PUT", postURL, userAdded, false, empData);
-console.log("Made PUT AJAX call to the server at " + showTime());
+const deleteURL = "http://localhost:3000/employees/6";
+makePromiseCall("DELETE", deleteURL, false)
+            .then(responseText => {
+                console.log("User Deleted at: " + showTime() + "Value: "+ responseText);
+            })
+            .catch(error => console.log("delete error status : "+ JSON.stringify(error)));
+console.log("Made DELETE Promise call to the server at " + showTime());
+
+const postURL = "http://localhost:3000/employees";
+const empData = {"name":"Aayush","salary":"110000"};
+makePromiseCall("POST", postURL, true, empData)
+               .then(responseText => {
+                console.log("User Added at: " + showTime() + "Value: "+ responseText);
+            })
+            .catch(error => console.log("post error status : "+ JSON.stringify(error)));
+console.log("Made POST Promise call to the server at " + showTime());
